@@ -229,7 +229,7 @@ class StoryMiner:
             # Fill response fields (Protocol v3.2.0)
             synapse.output_data = output_data
             synapse.generation_time = t.elapsed
-            synapse.miner_version = "2.0.0"  # Updated version with flexible generators
+            synapse.miner_version = "3.2.0"  # Match protocol version
 
             # Populate model_info for transparency (Protocol v3.2.0)
             synapse.model_info = {

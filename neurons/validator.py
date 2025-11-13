@@ -86,7 +86,7 @@ class StoryValidator:
         self.timeout = int(os.getenv("VALIDATOR_TIMEOUT", "60"))
         self.ema_alpha = float(os.getenv("EMA_ALPHA", "0.1"))
         self.temperature = float(os.getenv("SOFTMAX_TEMPERATURE", "2.0"))
-        self.weight_update_frequency = int(os.getenv("WEIGHT_UPDATE_FREQ", "10"))
+        self.weight_update_frequency = int(os.getenv("WEIGHT_UPDATE_FREQ", "20"))
 
         # Task distribution (blueprint:40%, characters:25%, story_arc:25%, chapters:10%)
         self.task_distribution = {
@@ -622,7 +622,7 @@ class StoryValidator:
         weights = normalize_weights(incentives)
 
         # Apply minimum weight (防止完全归零)
-        min_weight = 0.001
+        min_weight = 0.0001
         weights = {uid: max(w, min_weight) for uid, w in weights.items()}
 
         # Re-normalize
