@@ -215,11 +215,21 @@ class StoryValidator:
                 break
 
         # Calculate final multiplier
+        # Note: mode_mult already includes the base multiplier, so we don't multiply again
+        # For API mode: mode_mult = 0.5, model_bonus = 1.0, final = 0.5 * 1.0 = 0.5
+        # For recommended API model: mode_mult = 0.5, model_bonus = 2.0, final = 0.5 * 2.0 = 1.0
         final_multiplier = mode_mult * model_bonus
         multiplier_info["final_multiplier"] = final_multiplier
 
         # Apply multiplier
         final_score = base_score * final_multiplier
+        
+        # Log the calculation for debugging
+        bt.logging.debug(f"🔍 VALIDATOR DEBUG: Model multiplier calculation for {model_name}:")
+        bt.logging.debug(f"   Mode: {mode}, mode_mult: {mode_mult}")
+        bt.logging.debug(f"   Model bonus: {model_bonus}")
+        bt.logging.debug(f"   Final multiplier: {final_multiplier}")
+        bt.logging.debug(f"   Base score: {base_score:.2f} -> Final score: {final_score:.2f}")
 
         # Apply minimum quality threshold
         min_quality = policy.get("min_quality_score", 0.6)
