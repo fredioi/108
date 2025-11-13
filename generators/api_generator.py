@@ -144,20 +144,101 @@ class APIGenerator(StoryGenerator):
         return response.text
 
     def _build_messages(self, input_data: Dict) -> list:
-        """Build OpenAI-style messages."""
+        """Build OpenAI-style messages with strict JSON format requirement."""
+        task_type = input_data.get("task_type", "unknown")
         user_input = input_data.get("user_input", "")
         blueprint = input_data.get("blueprint", {})
+        characters = input_data.get("characters", {})
+        story_arc = input_data.get("story_arc", {})
+        chapter_ids = input_data.get("chapter_ids", [])
 
-        content = f"Generate engaging story content based on:\n\n"
+        # Build context based on task type
+        content = f"Task Type: {task_type}\n\n"
         content += f"User Request: {user_input}\n\n"
         
         if blueprint:
             content += f"Blueprint: {blueprint}\n\n"
+        if characters:
+            content += f"Characters: {characters}\n\n"
+        if story_arc:
+            content += f"Story Arc: {story_arc}\n\n"
+        if chapter_ids:
+            content += f"Chapter IDs: {chapter_ids}\n\n"
+
+        # Add strict JSON format requirement
+        content += "**MUST OUTPUT STRICT JSON FORMAT ONLY**\n\n"
+        
+        # Add JSON structure based on task type
+        if task_type == "blueprint":
+            content += """Required JSON structure:
+{
+  "title": "story title",
+  "genre": "genre",
+  "setting": "setting description",
+  "core_conflict": "core conflict",
+  "themes": ["theme1", "theme2"],
+  "tone": "tone",
+  "target_audience": "target audience"
+}"""
+        elif task_type == "characters":
+            content += """Required JSON structure:
+{
+  "characters": [
+    {
+      "id": "character_id",
+      "name": "character name",
+      "archetype": "archetype",
+      "background": "background",
+      "motivation": "motivation",
+      "skills": ["skill1", "skill2"],
+      "personality_traits": ["trait1", "trait2"],
+      "relationships": {"other_character": "relationship"}
+    }
+  ]
+}"""
+        elif task_type == "story_arc":
+            content += """Required JSON structure:
+{
+  "title": "story title",
+  "description": "description",
+  "chapters": [
+    {
+      "id": 1,
+      "title": "chapter title",
+      "description": "chapter description",
+      "storyProgress": 0.08,
+      "characterFocus": ["character_id"]
+    }
+  ],
+  "arcs": {"act1": {"chapters": [1,2,3], "description": "description"}},
+  "themes": {"primary": "theme", "secondary": ["theme1", "theme2"]},
+  "hooks": {"opening": "hook", "midpoint": "hook", "climax": "hook"}
+}"""
+        elif task_type == "chapters":
+            content += """Required JSON structure:
+{
+  "chapters": [
+    {
+      "id": 1,
+      "title": "chapter title",
+      "content": "chapter content (1000-3000 words)",
+      "choices": [
+        {
+          "text": "choice text",
+          "nextChapter": 2,
+          "consequences": {"mood": "+10", "relationship_character": "+5"}
+        }
+      ]
+    }
+  ]
+}"""
+
+        content += "\n\n**IMPORTANT: Output ONLY valid JSON, no other text!**"
 
         return [
             {
                 "role": "system",
-                "content": "You are a creative story writer for an interactive story game."
+                "content": "You are a JSON format generator. Your ONLY task is to output valid JSON format. Do not add any explanations, comments, or markdown formatting."
             },
             {
                 "role": "user",
@@ -166,18 +247,96 @@ class APIGenerator(StoryGenerator):
         ]
 
     def _build_prompt(self, input_data: Dict) -> str:
-        """Build simple prompt."""
+        """Build simple prompt with strict JSON format requirement."""
+        task_type = input_data.get("task_type", "unknown")
         user_input = input_data.get("user_input", "")
         blueprint = input_data.get("blueprint", {})
+        characters = input_data.get("characters", {})
+        story_arc = input_data.get("story_arc", {})
+        chapter_ids = input_data.get("chapter_ids", [])
 
-        prompt = "You are a creative story writer.\n\n"
+        prompt = "You are a JSON format generator. Your ONLY task is to output valid JSON format.\n\n"
+        prompt += f"Task Type: {task_type}\n"
         prompt += f"User Request: {user_input}\n\n"
         
         if blueprint:
             prompt += f"Blueprint: {blueprint}\n\n"
+        if characters:
+            prompt += f"Characters: {characters}\n\n"
+        if story_arc:
+            prompt += f"Story Arc: {story_arc}\n\n"
+        if chapter_ids:
+            prompt += f"Chapter IDs: {chapter_ids}\n\n"
 
-        prompt += "Generate engaging story content:"
+        # Add strict JSON format requirement
+        prompt += "**MUST OUTPUT STRICT JSON FORMAT ONLY**\n\n"
+        
+        # Add JSON structure based on task type (same as above)
+        if task_type == "blueprint":
+            prompt += """Required JSON structure:
+{
+  "title": "story title",
+  "genre": "genre",
+  "setting": "setting description",
+  "core_conflict": "core conflict",
+  "themes": ["theme1", "theme2"],
+  "tone": "tone",
+  "target_audience": "target audience"
+}"""
+        elif task_type == "characters":
+            prompt += """Required JSON structure:
+{
+  "characters": [
+    {
+      "id": "character_id",
+      "name": "character name",
+      "archetype": "archetype",
+      "background": "background",
+      "motivation": "motivation",
+      "skills": ["skill1", "skill2"],
+      "personality_traits": ["trait1", "trait2"],
+      "relationships": {"other_character": "relationship"}
+    }
+  ]
+}"""
+        elif task_type == "story_arc":
+            prompt += """Required JSON structure:
+{
+  "title": "story title",
+  "description": "description",
+  "chapters": [
+    {
+      "id": 1,
+      "title": "chapter title",
+      "description": "chapter description",
+      "storyProgress": 0.08,
+      "characterFocus": ["character_id"]
+    }
+  ],
+  "arcs": {"act1": {"chapters": [1,2,3], "description": "description"}},
+  "themes": {"primary": "theme", "secondary": ["theme1", "theme2"]},
+  "hooks": {"opening": "hook", "midpoint": "hook", "climax": "hook"}
+}"""
+        elif task_type == "chapters":
+            prompt += """Required JSON structure:
+{
+  "chapters": [
+    {
+      "id": 1,
+      "title": "chapter title",
+      "content": "chapter content (1000-3000 words)",
+      "choices": [
+        {
+          "text": "choice text",
+          "nextChapter": 2,
+          "consequences": {"mood": "+10", "relationship_character": "+5"}
+        }
+      ]
+    }
+  ]
+}"""
 
+        prompt += "\n\n**IMPORTANT: Output ONLY valid JSON, no other text!**"
         return prompt
 
     def get_mode(self) -> str:

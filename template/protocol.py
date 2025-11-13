@@ -278,12 +278,11 @@ class StoryGenerationSynapse(bt.Synapse):
             int: Estimated size of data transmitted in headers (not body)
         """
         # Create a copy and clear large Dict fields that go in HTTP body
-        # IMPORTANT: Don't set output_data to None, use empty dict to preserve the field
         header_only = self.model_copy()
         header_only.blueprint = None
         header_only.characters = None
         header_only.story_arc = None
-        header_only.output_data = {}  # Use empty dict instead of None to preserve field
+        header_only.output_data = None
 
         # Calculate size of remaining fields (what actually goes in headers)
         # Only small fields like task_type, user_input, etc.
