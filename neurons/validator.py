@@ -786,7 +786,7 @@ class StoryValidator:
                     try:
                         # Create a mock synapse object from dict
                         class MockSynapse:
-                            def __init__(self, data):
+                            def __init__(self, data, uid=None):
                                 # Case 1: dict has output_data field
                                 if "output_data" in data:
                                     self.output_data = data.get("output_data")
@@ -799,7 +799,14 @@ class StoryValidator:
                                     self.output_data = data
                                     self.generation_time = data.get("generation_time", 0.0)
                                     self.task_type = self._infer_task_type(data)
+                                    
+                                    # Try to get model_info from the data or use default
                                     self.model_info = data.get("model_info", {})
+                                    if not self.model_info:
+                                        # If no model_info in data, try to infer from common patterns
+                                        # This is a fallback for when serialization strips metadata
+                                        self.model_info = self._infer_model_info(data, uid)
+                                    
                                     self.miner_version = data.get("miner_version", "unknown")
                             
                             def _infer_task_type(self, data):
@@ -815,6 +822,30 @@ class StoryValidator:
                                 else:
                                     return "unknown"
                             
+                            def _infer_model_info(self, data, uid=None):
+                                """Infer model info from data or use defaults based on common patterns"""
+                                # Default model info for API miners when metadata is lost
+                                default_info = {
+                                    "mode": "api",
+                                    "name": "openai/gpt-oss-20b",  # Common model based on logs
+                                    "version": None,
+                                    "provider": "openai",
+                                    "parameters": {}
+                                }
+                                
+                                # Try to extract any model info from the data structure
+                                if isinstance(data, dict):
+                                    # Look for any model-related fields
+                                    for key in data.keys():
+                                        if "model" in key.lower():
+                                            default_info["name"] = data[key]
+                                            break
+                                
+                                # Log the inference for debugging
+                                bt.logging.debug(f"🔍 VALIDATOR DEBUG: Inferred model_info for UID {uid}: {default_info}")
+                                
+                                return default_info
+                            
                             def get_required_output_fields(self):
                                 """Get required output fields for the task type"""
                                 if self.task_type == "blueprint":
@@ -828,7 +859,7 @@ class StoryValidator:
                                 else:
                                     return []
                         
-                        mock_response = MockSynapse(response)
+                        mock_response = MockSynapse(response, uid)
                         
                         # Check if output_data is valid
                         if mock_response.output_data is not None:

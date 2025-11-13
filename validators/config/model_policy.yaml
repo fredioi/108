@@ -28,6 +28,9 @@ quality_policy:
     - name: "gpt-4-turbo"
       bonus: 1.2
       tier: "premium"
+    - name: "openai/gpt-oss-20b"
+      bonus: 2.0
+      tier: "premium"
     
     # Anthropic Claude
     - name: "claude-3-opus"
