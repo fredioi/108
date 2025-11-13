@@ -751,31 +751,57 @@ class StoryValidator:
                     bt.logging.warning(f"   Response keys: {list(response.keys()) if response else 'empty'}")
                     
                     # Try to extract data from dict response
-                    if "output_data" in response:
-                        bt.logging.info(f"   Found output_data in dict, attempting to score...")
-                        try:
-                            # Create a mock synapse object from dict
-                            class MockSynapse:
-                                def __init__(self, data):
+                    # Handle two cases:
+                    # 1. dict contains "output_data" field (proper serialization)
+                    # 2. dict directly contains the JSON structure (serialization error)
+                    
+                    try:
+                        # Create a mock synapse object from dict
+                        class MockSynapse:
+                            def __init__(self, data):
+                                # Case 1: dict has output_data field
+                                if "output_data" in data:
                                     self.output_data = data.get("output_data")
                                     self.generation_time = data.get("generation_time", 0.0)
                                     self.task_type = data.get("task_type", "unknown")
                                     self.model_info = data.get("model_info", {})
                                     self.miner_version = data.get("miner_version", "unknown")
+                                else:
+                                    # Case 2: dict IS the output_data (serialization error)
+                                    self.output_data = data
+                                    self.generation_time = data.get("generation_time", 0.0)
+                                    self.task_type = self._infer_task_type(data)
+                                    self.model_info = data.get("model_info", {})
+                                    self.miner_version = data.get("miner_version", "unknown")
                             
-                            mock_response = MockSynapse(response)
-                            
-                            # Check if output_data is valid
-                            if mock_response.output_data is not None:
-                                # Score the mock response
-                                score, breakdown = self.score_response(mock_response, context)
-                                scores[uid] = score
-                                bt.logging.info(f"📊 Miner {uid} (dict): {score:.2f} points")
-                                continue
-                            else:
-                                bt.logging.warning(f"   output_data is None in dict response")
-                        except Exception as e:
-                            bt.logging.error(f"   Failed to score dict response: {e}")
+                            def _infer_task_type(self, data):
+                                """Infer task type from data structure"""
+                                if "title" in data and "genre" in data and "setting" in data:
+                                    return "blueprint"
+                                elif "characters" in data:
+                                    return "characters"
+                                elif "chapters" in data and "arcs" in data:
+                                    return "story_arc"
+                                elif "chapters" in data and any("content" in ch for ch in data.get("chapters", [])):
+                                    return "chapters"
+                                else:
+                                    return "unknown"
+                        
+                        mock_response = MockSynapse(response)
+                        
+                        # Check if output_data is valid
+                        if mock_response.output_data is not None:
+                            # Score the mock response
+                            score, breakdown = self.score_response(mock_response, context)
+                            scores[uid] = score
+                            bt.logging.info(f"📊 Miner {uid} (dict): {score:.2f} points")
+                            continue
+                        else:
+                            bt.logging.warning(f"   output_data is None in dict response")
+                    except Exception as e:
+                        bt.logging.error(f"   Failed to score dict response: {e}")
+                        import traceback
+                        bt.logging.debug(traceback.format_exc())
                     
                     scores[uid] = 0.0
                     continue
