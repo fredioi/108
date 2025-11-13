@@ -6,14 +6,14 @@
 quality_policy:
   # Minimum quality threshold (0.0 - 1.0)
   # Stories below this score receive 0 reward regardless of model
-  min_quality_score: 0.6
+  min_quality_score: 0.3
   
   # Mode-based reward multipliers
   mode_multipliers:
     local: 1.5    # Local GPU models (full decentralization)
     vllm: 1.5     # vLLM accelerated local models
     custom: 1.0   # Custom implementations
-    api: 0.5      # Cloud API fallback
+    api: 1.2      # Cloud API fallback
     unknown: 0.2  # Penalize non-disclosure
   
   # Recommended high-quality models (receive bonus multiplier)

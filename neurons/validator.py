@@ -698,23 +698,24 @@ class StoryValidator:
                 await asyncio.sleep(self.query_interval)
                 return
 
-            # Select top performers + random exploration
-            num_miners = min(10, len(available_miners))
-            sorted_miners = sorted(
-                available_miners,
-                key=lambda x: self.scores.get(x[0], 0),
-                reverse=True
-            )
-
-            top_k = int(num_miners * 0.7)
-            explore_k = num_miners - top_k
-
-            selected = sorted_miners[:top_k]
-            if len(sorted_miners) > top_k:
-                selected += random.sample(sorted_miners[top_k:], min(explore_k, len(sorted_miners) - top_k))
+            # Select random miners (excluding uid 0)
+            num_miners = min(9, len(available_miners))
+            
+            # Filter out uid 0 (typically reserved for system/miner registration)
+            filtered_miners = [(uid, axon) for uid, axon in available_miners if uid != 0]
+            
+            if len(filtered_miners) == 0:
+                bt.logging.warning("No available miners after filtering out uid 0")
+                await asyncio.sleep(self.query_interval)
+                return
+            
+            # Random selection from filtered miners
+            selected = random.sample(filtered_miners, min(num_miners, len(filtered_miners)))
 
             selected_uids = [uid for uid, _ in selected]
             selected_axons = [axon for _, axon in selected]
+            
+            bt.logging.debug(f"🔍 VALIDATOR DEBUG: Selected {len(selected)} random miners (excluding uid 0): {selected_uids}")
 
             bt.logging.info(f"📡 Querying {len(selected_axons)} miners: {selected_uids}")
 
