@@ -183,9 +183,15 @@ class StoryMiner:
                             }
                     else:
                         output_data = {"error": "Empty response from generator"}
-                except json.JSONDecodeError:
-                    # If not JSON, return raw text
-                    output_data = {"generated_text": generated_content}
+                except json.JSONDecodeError as e:
+                    # If not JSON, return raw text with error info
+                    bt.logging.warning(f"⚠️  JSON parsing failed for {synapse.task_type}: {e}")
+                    bt.logging.debug(f"   Raw content (first 500 chars): {generated_content[:500]}")
+                    output_data = {
+                        "error": f"JSON parsing failed: {str(e)}",
+                        "generated_text": generated_content,
+                        "hint": "LLM did not return valid JSON format"
+                    }
 
             # Fill response fields (Protocol v3.2.0)
             synapse.output_data = output_data

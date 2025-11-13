@@ -178,7 +178,11 @@ class StoryMinerGemini:
         except json.JSONDecodeError as e:
             bt.logging.error(f"JSON 解析失败: {e}")
             bt.logging.error(f"原始内容: {content[:500]}")
-            return {"error": "Failed to parse JSON response"}
+            return {
+                "error": f"JSON parsing failed: {str(e)}",
+                "generated_text": content,
+                "hint": "LLM did not return valid JSON format"
+            }
         except Exception as e:
             bt.logging.error(f"Gemini API 错误: {e}")
             return {"error": str(e)}
