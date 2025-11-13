@@ -723,10 +723,19 @@ class StoryValidator:
                 bt.logging.debug(f"  → UID {uid}: {axon.ip}:{axon.port}")
 
             # 4. Query miners
+            bt.logging.debug(f"?? VALIDATOR DEBUG: Querying {len(selected_axons)} miners with {synapse.task_type} task")
+            bt.logging.debug(f"🔍 VALIDATOR DEBUG: Synapse being sent:")
+            bt.logging.debug(f"   Type: {type(synapse)}")
+            bt.logging.debug(f"   Task type: {synapse.task_type}")
+            bt.logging.debug(f"   User input: {synapse.user_input[:100]}...")
+            bt.logging.debug(f"   Protocol version: {getattr(synapse, 'protocol_version', 'unknown')}")
+            
             with Timer() as t:
                 responses = await self.query_miners(synapse, selected_axons)
 
             bt.logging.info(f"⏱️  Query completed in {t.elapsed:.2f}s")
+            bt.logging.debug(f"🔍 VALIDATOR DEBUG: Received {len(responses)} responses")
+            bt.logging.debug(f"🔍 VALIDATOR DEBUG: Response types: {[type(r).__name__ for r in responses]}")
 
             # 5. Score responses
             scores = {}
@@ -734,6 +743,25 @@ class StoryValidator:
                 bt.logging.debug(f"\n{'='*60}")
                 bt.logging.debug(f"Evaluating Miner UID {uid} ({axon.ip}:{axon.port})")
                 bt.logging.debug(f"{'='*60}")
+                bt.logging.debug(f"🔍 VALIDATOR DEBUG: Response {uid} details:")
+                bt.logging.debug(f"   Type: {type(response)}")
+                bt.logging.debug(f"   Is None: {response is None}")
+                
+                if response is not None:
+                    bt.logging.debug(f"   Has output_data: {hasattr(response, 'output_data')}")
+                    if hasattr(response, 'output_data'):
+                        bt.logging.debug(f"   output_data type: {type(response.output_data)}")
+                        bt.logging.debug(f"   output_data is None: {response.output_data is None}")
+                        if response.output_data is not None:
+                            bt.logging.debug(f"   output_data keys: {list(response.output_data.keys()) if isinstance(response.output_data, dict) else 'not a dict'}")
+                    
+                    bt.logging.debug(f"   Has generation_time: {hasattr(response, 'generation_time')}")
+                    bt.logging.debug(f"   Has task_type: {hasattr(response, 'task_type')}")
+                    bt.logging.debug(f"   Has model_info: {hasattr(response, 'model_info')}")
+                    
+                    # Log all attributes for debugging
+                    all_attrs = [attr for attr in dir(response) if not attr.startswith('_')]
+                    bt.logging.debug(f"   All attributes: {all_attrs}")
 
                 # Check and log response status (INFO level for operators to see without --logging.debug)
                 if response is None:
@@ -786,6 +814,19 @@ class StoryValidator:
                                     return "chapters"
                                 else:
                                     return "unknown"
+                            
+                            def get_required_output_fields(self):
+                                """Get required output fields for the task type"""
+                                if self.task_type == "blueprint":
+                                    return ["title", "genre", "setting", "core_conflict", "themes", "tone", "target_audience"]
+                                elif self.task_type == "characters":
+                                    return ["characters"]
+                                elif self.task_type == "story_arc":
+                                    return ["title", "description", "chapters", "arcs", "themes", "hooks"]
+                                elif self.task_type == "chapters":
+                                    return ["chapters"]
+                                else:
+                                    return []
                         
                         mock_response = MockSynapse(response)
                         

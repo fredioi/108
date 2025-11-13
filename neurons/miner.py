@@ -135,6 +135,16 @@ class StoryMiner:
             bt.logging.info(f"📨 Received {synapse.task_type} request")
 
             with Timer() as t:
+                # Debug: Log incoming synapse details
+                bt.logging.debug(f"🔍 MINER DEBUG: Processing {synapse.task_type} request")
+                bt.logging.debug(f"   Synapse type: {type(synapse)}")
+                bt.logging.debug(f"   Protocol version: {getattr(synapse, 'protocol_version', 'unknown')}")
+                bt.logging.debug(f"   User input: {synapse.user_input[:100]}...")
+                bt.logging.debug(f"   Blueprint present: {synapse.blueprint is not None}")
+                bt.logging.debug(f"   Characters present: {synapse.characters is not None}")
+                bt.logging.debug(f"   Story arc present: {synapse.story_arc is not None}")
+                bt.logging.debug(f"   Chapter IDs: {synapse.chapter_ids}")
+
                 # Build input_data from synapse fields (Protocol v3.1.0)
                 input_data = {
                     "user_input": synapse.user_input,
@@ -145,11 +155,34 @@ class StoryMiner:
                     "task_type": synapse.task_type  # Pass task type to generator
                 }
 
+                # Debug: Log input_data structure
+                bt.logging.debug(f"🔍 MINER DEBUG: Input data structure:")
+                bt.logging.debug(f"   Keys: {list(input_data.keys())}")
+                for key, value in input_data.items():
+                    if value is not None:
+                        if isinstance(value, dict):
+                            bt.logging.debug(f"   {key}: dict with {len(value)} keys: {list(value.keys())}")
+                        elif isinstance(value, list):
+                            bt.logging.debug(f"   {key}: list with {len(value)} items")
+                        else:
+                            bt.logging.debug(f"   {key}: {type(value).__name__} = {str(value)[:100]}...")
+                    else:
+                        bt.logging.debug(f"   {key}: None")
+
+                # Debug: Log generator info
+                bt.logging.debug(f"🔍 MINER DEBUG: Generator mode: {self.generator.get_mode()}")
+                bt.logging.debug(f"🔍 MINER DEBUG: Generator model info: {self.generator.get_model_info()}")
+
                 # Use unified generator (supports local models, APIs, etc.)
+                bt.logging.debug(f"🔍 MINER DEBUG: Calling generator.generate()...")
                 result = await self.generator.generate(input_data)
+                bt.logging.debug(f"🔍 MINER DEBUG: Generator returned result type: {type(result)}")
+                bt.logging.debug(f"🔍 MINER DEBUG: Generator result keys: {list(result.keys()) if isinstance(result, dict) else 'not a dict'}")
 
                 # Extract generated content from generator response
                 generated_content = result.get("generated_content", "")
+                bt.logging.debug(f"🔍 MINER DEBUG: Generated content length: {len(generated_content)}")
+                bt.logging.debug(f"🔍 MINER DEBUG: Generated content preview: {generated_content[:200]}...")
 
                 # Try to parse as JSON if task expects structured output
                 try:
