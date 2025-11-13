@@ -86,7 +86,7 @@ class StoryValidator:
         self.timeout = int(os.getenv("VALIDATOR_TIMEOUT", "60"))
         self.ema_alpha = float(os.getenv("EMA_ALPHA", "0.1"))
         self.temperature = float(os.getenv("SOFTMAX_TEMPERATURE", "2.0"))
-        self.weight_update_frequency = int(os.getenv("WEIGHT_UPDATE_FREQ", "100"))
+        self.weight_update_frequency = int(os.getenv("WEIGHT_UPDATE_FREQ", "10"))
 
         # Task distribution (blueprint:40%, characters:25%, story_arc:25%, chapters:10%)
         self.task_distribution = {
