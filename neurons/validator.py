@@ -629,22 +629,53 @@ class StoryValidator:
                 bt.logging.warning("No weights to set")
                 return
 
+            # Prepare data for logging
+            log_data = {
+                "timestamp": time.time(),
+                "query_count": self.total_queries,
+                "weights": {},
+                "scores": {},
+                "submission_result": None
+            }
+
             # Log weight calculation details
             bt.logging.info("Weight calculation details:")
             sorted_weights = sorted(weights_dict.items(), key=lambda x: x[1], reverse=True)
-            for uid, weight in sorted_weights[:10]:  # Show top 10
+            
+            # Debug log for all UIDs and their scores
+            bt.logging.debug("=== DETAILED WEIGHTS AND SCORES ===")
+            for uid, weight in sorted_weights:
                 # Get miner info
                 try:
                     axon = self.metagraph.axons[uid]
                     stake = self.metagraph.S[uid].item()
                     ema_score = self.scores.get(uid, 0)
-                    bt.logging.info(
-                        f"  UID {uid}: weight={weight:.4f} "
-                        f"(score={ema_score:.2f}, stake={stake:.2f}τ, "
-                        f"ip={axon.ip}:{axon.port})"
+                    
+                    # Debug log for each UID
+                    bt.logging.debug(
+                        f"🔍 UID {uid}: "
+                        f"weight={weight:.6f}, "
+                        f"score={ema_score:.2f}, "
+                        f"stake={stake:.2f}τ, "
+                        f"ip={axon.ip}:{axon.port}, "
+                        f"hotkey={axon.hotkey[:10]}..."
                     )
+                    
+                    # Store in log data
+                    log_data["weights"][str(uid)] = weight
+                    log_data["scores"][str(uid)] = ema_score
+                    
+                    # Info log for top 10
+                    if len(sorted_weights) <= 10 or sorted_weights.index((uid, weight)) < 10:
+                        bt.logging.info(
+                            f"  UID {uid}: weight={weight:.4f} "
+                            f"(score={ema_score:.2f}, stake={stake:.2f}τ, "
+                            f"ip={axon.ip}:{axon.port})"
+                        )
                 except Exception as e:
                     bt.logging.debug(f"  UID {uid}: weight={weight:.4f} (error getting details: {e})")
+                    log_data["weights"][str(uid)] = weight
+                    log_data["scores"][str(uid)] = self.scores.get(uid, 0)
 
             if len(sorted_weights) > 10:
                 bt.logging.info(f"  ... and {len(sorted_weights) - 10} more miners")
@@ -653,15 +684,26 @@ class StoryValidator:
             uids = list(weights_dict.keys())
             weights = [weights_dict[uid] for uid in uids]
 
+            # Debug log before submission
+            bt.logging.debug("=== PRE-SUBMISSION DEBUG ===")
+            bt.logging.debug(f"Total miners: {len(uids)}")
+            bt.logging.debug(f"UIDs: {uids}")
+            bt.logging.debug(f"Weights: {[f'{w:.6f}' for w in weights]}")
+            bt.logging.debug(f"Weights sum: {sum(weights):.6f}")
+            bt.logging.debug(f"Netuid: {self.config.netuid}")
+            bt.logging.debug(f"Wallet: {self.wallet.hotkey.ss58_address[:10]}...")
+
             # Convert to tensors
             uids_tensor = torch.tensor(uids, dtype=torch.int64)
             weights_tensor = torch.tensor(weights, dtype=torch.float32)
 
             bt.logging.info(f"Submitting weights to chain...")
-            bt.logging.debug(f"  UIDs: {uids[:20]}{'...' if len(uids) > 20 else ''}")
-            bt.logging.debug(f"  Weights sum: {sum(weights):.4f}")
+            bt.logging.debug(f"  UIDs tensor: {uids_tensor}")
+            bt.logging.debug(f"  Weights tensor: {weights_tensor}")
+            bt.logging.debug(f"  Weights sum: {sum(weights):.6f}")
 
             # Set weights
+            bt.logging.debug("Calling subtensor.set_weights...")
             success, message = self.subtensor.set_weights(
                 netuid=self.config.netuid,
                 wallet=self.wallet,
@@ -671,14 +713,68 @@ class StoryValidator:
                 wait_for_finalization=False
             )
 
+            # Store submission result
+            log_data["submission_result"] = {
+                "success": success,
+                "message": message,
+                "uids_submitted": uids,
+                "weights_submitted": weights,
+                "netuid": self.config.netuid,
+                "wallet_hotkey": self.wallet.hotkey.ss58_address
+            }
+
+            # Debug log submission result
+            bt.logging.debug("=== SUBMISSION RESULT DEBUG ===")
+            bt.logging.debug(f"Success: {success}")
+            bt.logging.debug(f"Message: {message}")
+            bt.logging.debug(f"Submitted UIDs: {uids}")
+            bt.logging.debug(f"Submitted weights: {[f'{w:.6f}' for w in weights]}")
+
             if success:
                 bt.logging.success(f"✅ Weights set successfully: {len(uids)} miners")
                 bt.logging.info(f"   Transaction broadcast to chain")
+                bt.logging.debug(f"   Submission message: {message}")
             else:
                 bt.logging.error(f"❌ Failed to set weights: {message}")
+                bt.logging.error(f"   Success flag: {success}")
+                bt.logging.error(f"   Error details: {message}")
+
+            # Save to weights.log
+            self._save_weights_to_log(log_data)
 
         except Exception as e:
             bt.logging.error(f"Error setting weights: {e}")
+            bt.logging.error(traceback.format_exc())
+            
+            # Log error to weights.log
+            error_log_data = {
+                "timestamp": time.time(),
+                "query_count": self.total_queries,
+                "error": str(e),
+                "traceback": traceback.format_exc(),
+                "weights_dict": weights_dict if 'weights_dict' in locals() else None,
+                "scores_dict": self.scores if hasattr(self, 'scores') else None
+            }
+            self._save_weights_to_log(error_log_data)
+
+    def _save_weights_to_log(self, log_data: Dict[str, Any]):
+        """Save weights and scores to weights.log file."""
+        try:
+            log_file = "weights.log"
+            
+            # Convert to JSON string with proper formatting
+            log_entry = json.dumps(log_data, ensure_ascii=False, indent=2)
+            
+            # Append to log file
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(log_entry + "\n")
+                f.write("-" * 80 + "\n")  # Separator between entries
+            
+            bt.logging.info(f"✅ Weights and scores saved to {log_file}")
+            bt.logging.debug(f"Log entry length: {len(log_entry)} characters")
+            
+        except Exception as e:
+            bt.logging.error(f"Failed to save weights to log: {e}")
             bt.logging.error(traceback.format_exc())
 
     async def run_step(self):
