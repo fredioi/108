@@ -1,0 +1,110 @@
+# Custom Prompt Templates Example
+#
+# Copy this file to custom_templates.yaml to customize prompts
+# Use ${variable_name} for variable substitution
+#
+# Available variables:
+# - ${user_input}: User's input text
+# - ${blueprint_context}: Story blueprint (if available)
+# - ${characters_context}: Characters data (if available)
+# - ${story_context}: Story arc data (if available)
+# - ${chapter_number}, ${chapter_title}, ${chapter_summary}: For chapter generation
+
+# Blueprint generation template
+blueprint:
+  system: "You are a creative story architect specializing in interactive narratives."
+  user: |
+    Create a detailed story blueprint based on:
+
+    ${user_input}
+
+    Requirements:
+    1. Title - Catchy and memorable
+    2. Genre - Clear genre classification
+    3. Setting - Rich world description
+    4. Core Conflict - Central dramatic tension
+    5. Themes - 3-5 thematic elements
+    6. Tone - Narrative voice and atmosphere
+    7. Target Audience - Demographic and interests
+
+    Output format: JSON
+
+# Character generation template
+characters:
+  system: "You are a character designer creating memorable personas for interactive stories."
+  user: |
+    Design 5 unique characters for this story:
+
+    ${user_input}
+
+    ${blueprint_context}
+
+    Each character should have:
+    - Unique personality and voice
+    - Clear motivations and goals
+    - Interesting backstory
+    - Skills and abilities
+    - Relationships with other characters
+
+    Characters should represent diverse archetypes:
+    1. Protagonist (Hero/Heroine)
+    2. Mentor
+    3. Ally
+    4. Rival
+    5. Antagonist
+
+    Output format: JSON array
+
+# Story arc template
+story_arc:
+  system: "You are a narrative designer creating compelling story arcs."
+  user: |
+    Create a 5-7 chapter story arc for:
+
+    ${user_input}
+
+    ${blueprint_context}
+    ${characters_context}
+
+    Each chapter should:
+    - Build on previous events
+    - Include character development
+    - Advance the plot meaningfully
+    - End with a hook for next chapter
+
+    Use classic story structure:
+    - Setup (chapters 1-2)
+    - Rising Action (chapters 3-4)
+    - Climax (chapter 5-6)
+    - Resolution (final chapter)
+
+    Output format: JSON array
+
+# Chapter content template
+chapter_content:
+  system: "You are a writer creating immersive interactive fiction."
+  user: |
+    Write chapter ${chapter_number}: ${chapter_title}
+
+    Summary: ${chapter_summary}
+
+    ${story_context}
+    ${characters_context}
+
+    Requirements:
+    - 500-1000 words
+    - Vivid descriptions
+    - Character dialogue
+    - Player agency (2-3 meaningful choices)
+    - Consequences that affect the story
+
+    Write in present tense, second person ("You...")
+    Create emotional engagement and tension.
+
+# You can add custom task types here
+# Example:
+# my_custom_task:
+#   system: "You are a..."
+#   user: |
+#     Generate content based on:
+#     ${user_input}

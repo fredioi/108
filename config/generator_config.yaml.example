@@ -1,0 +1,220 @@
+# StoryFi Generator Configuration
+# 
+# This file controls which story generation backend the miner uses.
+# Miners are free to choose any implementation method.
+#
+# Reward Multipliers (applied by validators):
+# - local: 1.5x (recommended - full decentralization)
+# - api: 0.5x (fallback only)
+# - custom: 1.0x (advanced users)
+
+generator:
+  # Mode: "local" | "api" | "vllm" | "custom"
+  #
+  # "local" - Use local GPU model via transformers (1.5x rewards, requires GPU)
+  # "vllm" - Ultra-fast local inference (1.5x rewards, requires GPU)
+  # "api" - Use cloud API (0.5x rewards, easiest to start)
+  # "custom" - Use custom script or HTTP endpoint (1.0x rewards)
+  mode: "api"  # Default to API mode (easiest setup)
+
+  # Prompt Template System
+  # Allows customizing prompts without modifying code
+  use_templates: true
+  template_dir: "./config/prompts"  # Directory containing custom templates
+
+  # ============================================
+  # LOCAL MODE CONFIGURATION
+  # ============================================
+  local:
+    # HuggingFace model name
+    #
+    # FREE models (no HuggingFace login required):
+    # - Qwen/Qwen2.5-7B-Instruct (7B, excellent quality, 14GB VRAM) ⭐ RECOMMENDED
+    # - Qwen/Qwen2.5-14B-Instruct (14B, better quality, 28GB VRAM)
+    # - mistralai/Mistral-7B-Instruct-v0.2 (7B, good quality, 14GB VRAM)
+    #
+    # GATED models (require HuggingFace account + access request):
+    # - meta-llama/Llama-3.1-8B-Instruct (8B, excellent quality, 16GB VRAM)
+    # - meta-llama/Llama-3.1-70B-Instruct (70B, best quality, 80GB VRAM)
+    # - mistralai/Mixtral-8x7B-Instruct-v0.1 (56B, great quality, 60GB VRAM)
+    #
+    # To use gated models:
+    # 1. Create HuggingFace account: https://huggingface.co/
+    # 2. Request access to model on its page
+    # 3. Run: huggingface-cli login
+    # 4. Or set: export HF_TOKEN="your-token-here"
+    model_name: "Qwen/Qwen2.5-7B-Instruct"  # Changed to free model (no login required)
+
+    # Device: "cuda" | "cpu"
+    # Auto-detects if not specified
+    device: "cuda"
+
+    # Quantization: "4bit" | "8bit" | null
+    # 4bit reduces VRAM usage by ~75% (16GB → 4GB)
+    # 8bit reduces VRAM usage by ~50% (16GB → 8GB)
+    # null uses full precision (not recommended)
+    quantization: "4bit"
+
+    # Maximum memory to use (helps with multi-GPU setups)
+    max_memory: "16GB"
+
+    # Use Flash Attention 2 (faster inference if GPU supports it)
+    # Optional optimization - set to true if you have:
+    # - Modern GPU (Ampere/Ada architecture or newer)
+    # - Installed: pip install flash-attn --no-build-isolation
+    # Benefits: 2-3x faster inference
+    use_flash_attention: false
+
+  # ============================================
+  # vLLM MODE CONFIGURATION (High Performance)
+  # ============================================
+  vllm:
+    # HuggingFace model name
+    # Same models as local mode, but 2-3x faster inference
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+
+    # Number of GPUs for tensor parallelism (multi-GPU support)
+    # 1 = Single GPU (default)
+    # 2 = Spread model across 2 GPUs
+    # 4 = Spread model across 4 GPUs
+    tensor_parallel_size: 1
+
+    # GPU memory utilization (0.0 - 1.0)
+    # 0.9 = Use 90% of GPU memory (recommended)
+    # Lowering this reduces memory usage but may hurt performance
+    gpu_memory_utilization: 0.9
+
+    # Maximum context length (optional)
+    # If not set, uses model's default
+    # Llama-3.1: 128k tokens
+    max_model_len: null
+
+    # Quantization: "awq" | "squeezeLLM" | null
+    # AWQ: 4-bit quantization (requires AWQ model)
+    # squeezeLLM: Advanced quantization
+    # null: Full precision
+    quantization: null
+
+    # Data type: "auto" | "float16" | "bfloat16"
+    dtype: "auto"
+
+    # Sampling parameters
+    temperature: 0.8
+    top_p: 0.9
+    max_tokens: 2048
+
+  # ============================================
+  # API MODE CONFIGURATION
+  # ============================================
+  api:
+    # Provider: "openai" | "gemini" | "anthropic" (TODO) | "custom"
+    provider: "gemini"  # Using OpenAI-compatible API (智谱AI GLM-4)
+
+    # Environment variable containing API key
+    # For OpenAI: OPENAI_API_KEY
+    # For Gemini: GEMINI_API_KEY
+    # For 智谱AI: ZHIPU_API_KEY
+    api_key_env: "GEMINI_API_KEY"
+
+    # Model name
+    # OpenAI: "gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"
+    # Gemini: "gemini-2.0-flash-exp", "gemini-1.5-pro"
+    # 智谱AI: "glm-4", "glm-4-flash"
+    model: "gemini-2.0-flash-exp"  # 智谱AI快速模型
+
+    # Custom endpoint (for custom providers)
+    # 智谱AI endpoint
+    endpoint: null  # Only needed for custom providers
+
+  # ============================================
+  # CUSTOM MODE CONFIGURATION (Advanced)
+  # ============================================
+  custom:
+    # OPTION 1: Script Mode
+    # Path to custom generation script (Python, Node.js, etc.)
+    # Script should:
+    # 1. Read JSON from stdin
+    # 2. Output JSON to stdout with "content" field
+    # Example: "./custom/example_generate.py"
+    script_path: "./custom/example_generate.py"
+
+    # OPTION 2: HTTP Mode
+    # HTTP endpoint for custom generation service
+    # POST request with JSON body, expects JSON response with "content" field
+    # Example: "http://localhost:8000/generate"
+    endpoint: null
+
+    # Timeout in seconds (for both script and HTTP modes)
+    timeout: 60
+
+    # Environment variables to pass to script (script mode only)
+    env_vars: {}
+
+# ============================================
+# INSTALLATION NOTES
+# ============================================
+#
+# For LOCAL mode:
+#   pip install transformers accelerate bitsandbytes
+#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+#   pip install flash-attn    # Optional, for faster inference
+#
+# For vLLM mode (High Performance):
+#   pip install vllm
+#   # vLLM requires CUDA and is 2-3x faster than transformers
+#   # Recommended for production deployments with high volume
+#
+# For API mode (OpenAI):
+#   pip install openai
+#   export OPENAI_API_KEY="your-key-here"
+#
+# For API mode (Gemini):
+#   pip install google-generativeai
+#   export GEMINI_API_KEY="your-key-here"
+#
+# For CUSTOM mode (Script):
+#   # Make your script executable
+#   chmod +x ./custom/your_script.py
+#
+# For CUSTOM mode (HTTP):
+#   pip install aiohttp    # Already in requirements.txt
+#
+# ============================================
+# HARDWARE REQUIREMENTS
+# ============================================
+#
+# LOCAL MODE (transformers with 4bit quantization):
+#
+# Llama-3.1-8B-Instruct:
+#   - GPU: 6GB VRAM minimum, 8GB recommended
+#   - RAM: 16GB
+#   - Storage: 5GB for model weights
+#
+# Llama-3.1-70B-Instruct:
+#   - GPU: 40GB VRAM (A100) or 48GB (A6000)
+#   - RAM: 64GB
+#   - Storage: 40GB for model weights
+#
+# Mixtral-8x7B-Instruct:
+#   - GPU: 30GB VRAM
+#   - RAM: 32GB
+#   - Storage: 30GB for model weights
+#
+# vLLM MODE (full precision, optimized):
+#
+# Llama-3.1-8B-Instruct:
+#   - GPU: 16GB VRAM (single GPU)
+#   - RAM: 32GB
+#   - Storage: 16GB for model weights
+#   - Performance: 2-3x faster than transformers
+#
+# Llama-3.1-70B-Instruct:
+#   - GPU: 80GB VRAM (A100 80GB) or 2x A100 40GB (tensor parallelism)
+#   - RAM: 128GB
+#   - Storage: 140GB for model weights
+#   - Multi-GPU: Set tensor_parallel_size: 2
+#
+# CUSTOM MODE:
+#   - Depends on your implementation
+#   - Script mode: Minimal requirements
+#   - HTTP mode: Depends on your service

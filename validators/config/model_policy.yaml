@@ -1,0 +1,118 @@
+# StoryFi Model Quality Policy
+# =============================
+# This file defines model quality standards and reward multipliers
+# Validators use this to fairly assess miner outputs based on model choice
+
+quality_policy:
+  # Minimum quality threshold (0.0 - 1.0)
+  # Stories below this score receive 0 reward regardless of model
+  min_quality_score: 0.6
+  
+  # Mode-based reward multipliers
+  mode_multipliers:
+    local: 1.5    # Local GPU models (full decentralization)
+    vllm: 1.5     # vLLM accelerated local models
+    custom: 1.0   # Custom implementations
+    api: 0.5      # Cloud API fallback
+    unknown: 0.2  # Penalize non-disclosure
+  
+  # Recommended high-quality models (receive bonus multiplier)
+  recommended_models:
+    # OpenAI Models
+    - name: "gpt-4"
+      bonus: 1.3
+      tier: "premium"
+    - name: "gpt-4o"
+      bonus: 1.2
+      tier: "premium"
+    - name: "gpt-4-turbo"
+      bonus: 1.2
+      tier: "premium"
+    
+    # Anthropic Claude
+    - name: "claude-3-opus"
+      bonus: 1.3
+      tier: "premium"
+    - name: "claude-3-sonnet"
+      bonus: 1.2
+      tier: "standard"
+    
+    # Google Gemini
+    - name: "gemini-2.0-flash-exp"
+      bonus: 1.2
+      tier: "standard"
+    - name: "gemini-1.5-pro"
+      bonus: 1.2
+      tier: "standard"
+    
+    # Meta LLaMA (Local)
+    - name: "meta-llama/Llama-3.1-70B"
+      bonus: 1.5
+      tier: "premium-local"
+    - name: "meta-llama/Llama-3.1-8B"
+      bonus: 1.3
+      tier: "standard-local"
+    - name: "meta-llama/Llama-3.2"
+      bonus: 1.2
+      tier: "standard-local"
+    
+    # Mistral/Mixtral (Local)
+    - name: "mistralai/Mixtral-8x7B"
+      bonus: 1.4
+      tier: "premium-local"
+    - name: "mistralai/Mistral-7B"
+      bonus: 1.2
+      tier: "standard-local"
+    
+    # Qwen (Local)
+    - name: "Qwen/Qwen2.5-72B"
+      bonus: 1.4
+      tier: "premium-local"
+    - name: "Qwen/Qwen2.5-7B"
+      bonus: 1.2
+      tier: "standard-local"
+    
+    # Zhipu AI (China)
+    - name: "glm-4"
+      bonus: 1.1
+      tier: "standard"
+    - name: "glm-4-flash"
+      bonus: 1.0
+      tier: "budget"
+  
+  # Blacklisted models (known low quality) - receive 0 score
+  blacklisted_models:
+    - "gpt-3.5-turbo"       # Outdated, poor story quality
+    - "text-davinci-002"    # Deprecated
+    - "text-davinci-003"    # Deprecated
+    - "gpt-3"               # Too old
+    - "davinci"             # Base model, not instruction-tuned
+  
+  # Size-based bonuses (for local models)
+  # Larger models generally produce better stories
+  size_bonuses:
+    "70B+": 1.3     # 70B+ parameters
+    "30B-70B": 1.2  # 30-70B parameters
+    "7B-30B": 1.1   # 7-30B parameters
+    "<7B": 1.0      # Under 7B parameters
+
+# Scoring weights for story quality evaluation
+quality_dimensions:
+  creativity: 0.30        # Originality and imaginative elements
+  coherence: 0.25         # Logical flow and consistency
+  engagement: 0.20        # Reader interest and pacing
+  character_depth: 0.15   # Character development quality
+  language_quality: 0.10  # Grammar, style, vocabulary
+
+# Penalties for suspicious behavior
+penalties:
+  no_model_info: 0.5           # Multiply score by 0.5 if model_info missing
+  inconsistent_quality: 0.7    # Quality doesn't match claimed model
+  extremely_fast: 0.8          # Suspiciously fast generation (<1s for chapters)
+  copy_detected: 0.0           # Plagiarism or template detected
+
+# Bonus for consistent high performance
+loyalty_bonus:
+  enabled: true
+  consecutive_high_scores: 10   # After 10 consecutive scores >0.8
+  bonus_multiplier: 1.1         # Apply 1.1x bonus
