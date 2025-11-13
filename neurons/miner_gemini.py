@@ -399,12 +399,15 @@ JSON结构：
         chapters_info = {ch["id"]: ch for ch in story_arc["chapters"]}
         selected_chapters = [chapters_info[cid] for cid in chapter_ids if cid in chapters_info]
 
-        prompt = f"""你是章节内容作家。基于故事弧创作详细的章节内容。
+        prompt = f"""你是一个JSON格式生成器。你的唯一任务是生成严格符合JSON格式的章节内容。
 
-需要生成的章节信息:
-{json.dumps(selected_chapters, ensure_ascii=False, indent=2)}
+输入信息：
+- 需要生成的章节: {selected_chapters}
+- 故事蓝图: {blueprint.get('title', '未知故事')}
+- 角色信息: {len(characters.get('characters', []))} 个角色
+- 用户输入: {user_input}
 
-**必须严格按照以下JSON格式输出**，不要有任何Markdown格式，不要有```json```标记：
+**必须严格按照以下JSON格式输出**，不要有任何Markdown格式，不要有任何其他文字：
 
 {{
   "chapters": [
@@ -436,21 +439,20 @@ JSON结构：
   ]
 }}
 
-**严格要求**：
-1. content字段必须是1000-3000字的完整章节内容
-2. 每个章节必须有2-4个choices
-3. 每个choice必须有：
-   - text: 选项文字（10-30字）
-   - nextChapter: 下一章ID（整数）
-   - consequences: 后果对象，包含至少2个属性
-4. consequences的keys可以是：
-   - mood（心情）: "+10", "-5" 等
-   - relationship_xxx（关系）: "protagonist", "ally", "rival" 等
-   - resource_xxx（资源）: "gold", "health", "reputation" 等
-5. 不同选项的consequences必须有明显差异
-6. 所有内容必须用中文
+**系统指令**：
+1. 你的输出必须是有效的JSON格式
+2. 不要添加任何额外的文字、说明或markdown格式
+3. 所有字段必须用中文填写
+4. 如果无法生成有效JSON，请返回错误信息
 
-只输出纯JSON，不要有任何其他文字。"""
+**JSON验证规则**：
+- 必须以 {{ 开头和 }} 结尾
+- 所有字符串必须用双引号包围
+- 数组必须用方括号包围
+- 对象必须用花括号包围
+- 不允许有注释或额外文本
+
+只输出纯JSON，不要有任何其他内容。"""
 
         return await self.generate_with_gemini(prompt)
 
