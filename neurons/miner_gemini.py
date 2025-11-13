@@ -240,9 +240,8 @@ JSON结构：
 4. mentor（导师）
 5. wildcard（不可预测的角色）
 
-**必须以JSON格式输出**，不要有任何Markdown格式。
+**必须严格按照以下JSON格式输出**，不要有任何Markdown格式，不要有任何其他文字，只输出纯JSON：
 
-JSON结构：
 {{
   "characters": [
     {{
@@ -258,17 +257,66 @@ JSON结构：
         "rival": "与对手的关系"
       }}
     }},
-    ... （其他4个角色）
+    {{
+      "id": "ally",
+      "name": "角色名字",
+      "archetype": "角色原型",
+      "background": "背景故事",
+      "motivation": "动机",
+      "skills": ["技能1", "技能2", "技能3"],
+      "personality_traits": ["性格1", "性格2", "性格3"],
+      "relationships": {{
+        "protagonist": "与主角的关系",
+        "rival": "与对手的关系"
+      }}
+    }},
+    {{
+      "id": "rival",
+      "name": "角色名字",
+      "archetype": "角色原型",
+      "background": "背景故事",
+      "motivation": "动机",
+      "skills": ["技能1", "技能2", "技能3"],
+      "personality_traits": ["性格1", "性格2", "性格3"],
+      "relationships": {{
+        "protagonist": "与主角的关系",
+        "ally": "与盟友的关系"
+      }}
+    }},
+    {{
+      "id": "mentor",
+      "name": "角色名字",
+      "archetype": "角色原型",
+      "background": "背景故事",
+      "motivation": "动机",
+      "skills": ["技能1", "技能2", "技能3"],
+      "personality_traits": ["性格1", "性格2", "性格3"],
+      "relationships": {{
+        "protagonist": "与主角的关系"
+      }}
+    }},
+    {{
+      "id": "wildcard",
+      "name": "角色名字",
+      "archetype": "角色原型",
+      "background": "背景故事",
+      "motivation": "动机",
+      "skills": ["技能1", "技能2", "技能3"],
+      "personality_traits": ["性格1", "性格2", "性格3"],
+      "relationships": {{
+        "protagonist": "与主角的关系"
+      }}
+    }}
   ]
 }}
 
-要求：
-1. 5个角色必须性格迥异
-2. 每个角色的background要有深度
-3. relationships要描述角色间的互动
-4. 所有内容必须用中文
+**严格要求**：
+1. 必须严格按照上面的JSON结构输出
+2. 不要添加任何额外的文字、说明或markdown格式
+3. 所有字段必须用中文填写
+4. 只输出纯JSON，不要有任何其他内容
 
-只输出JSON，不要有任何其他文字。"""
+如果违反格式要求，系统将无法处理你的响应。"""
 
         return await self.generate_with_gemini(prompt)
 
