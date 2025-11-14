@@ -86,7 +86,7 @@ class StoryValidator:
         self.timeout = int(os.getenv("VALIDATOR_TIMEOUT", "60"))
         self.ema_alpha = float(os.getenv("EMA_ALPHA", "0.1"))
         self.temperature = float(os.getenv("SOFTMAX_TEMPERATURE", "2.0"))
-        self.weight_update_frequency = int(os.getenv("WEIGHT_UPDATE_FREQ", "100"))
+        self.weight_update_frequency = int(os.getenv("WEIGHT_UPDATE_FREQ", "20"))  # 降低到20次
 
         # Task distribution (blueprint:40%, characters:25%, story_arc:25%, chapters:10%)
         self.task_distribution = {
@@ -242,7 +242,8 @@ class StoryValidator:
         bt.logging.debug(f"   Base score: {base_score:.2f} -> Final score: {final_score:.2f}")
 
         # Apply minimum quality threshold
-        min_quality = policy.get("min_quality_score", 0.6)
+        # Use the value from config file, default to 0.3 if not specified
+        min_quality = policy.get("min_quality_score", 0.3)
         normalized_score = base_score / 100.0
         if normalized_score < min_quality:
             bt.logging.warning(
@@ -817,11 +818,12 @@ class StoryValidator:
             # Select random miners (excluding uid 0)
             num_miners = min(9, len(available_miners))
             
-            # Filter out uid 0 (typically reserved for system/miner registration)
-            filtered_miners = [(uid, axon) for uid, axon in available_miners if uid != 0]
+            # Don't filter out uid 0 - it might be a valid miner
+            # Only filter out actually invalid UIDs (negative numbers)
+            filtered_miners = [(uid, axon) for uid, axon in available_miners if uid >= 0]
             
             if len(filtered_miners) == 0:
-                bt.logging.warning("No available miners after filtering out uid 0")
+                bt.logging.warning("No available miners after filtering")
                 await asyncio.sleep(self.query_interval)
                 return
             
@@ -1104,6 +1106,10 @@ class StoryValidator:
         # Sync metagraph
         self.metagraph.sync(subtensor=self.subtensor)
         bt.logging.info(f"📡 Metagraph synced: {len(self.metagraph.axons)} miners")
+
+        # Initialize weights for all available miners to prevent vtrust = 0
+        bt.logging.info("Initializing weights for all available miners...")
+        await self.set_weights()
 
         try:
             while True:
